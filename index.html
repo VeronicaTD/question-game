@@ -399,10 +399,14 @@ function renderWhats(){
 <script>
 // ================= ЭТАП 6. Собери и измени =================
 const PAIRS = [
-  { s1:'She lives in London.',              blocks:['Where','does','she','live'],        extra:['do','is'],      s2:'They live in London.',            q2:'Where do they live',              alt2:[] },
-  { s1:'She is at home.',                   blocks:['Where','is','she'],                 extra:['does','do'],    s2:'They are at home.',               q2:'Where are they',                  alt2:[] },
-  { s1:'You play Minecraft.',               blocks:['What','do','you','play'],           extra:['does','are'],   s2:'Your brother plays Minecraft.',   q2:'What does your brother play',     alt2:[] },
-  { s1:'He gets up at seven.',              blocks:['What time','does','he','get up'],   extra:['do','is'],      s2:'They get up at seven.',           q2:'What time do they get up',        alt2:['when do they get up'] }
+  { s1:'She lives in London.',              under:'in London',     blocks:['Where','does','she','live'],        extra:['do','is'],      s2:'They live in London.',            q2:'Where do they live',              alt2:[] },
+  { s1:'She is at home.',                   under:'at home',       blocks:['Where','is','she'],                 extra:['does','do'],    s2:'They are at home.',               q2:'Where are they',                  alt2:[] },
+  { s1:'You play Minecraft.',               under:'Minecraft',     blocks:['What','do','you','play'],           extra:['does','are'],   s2:'Your brother plays Minecraft.',   q2:'What does your brother play',     alt2:[] },
+  { s1:'He gets up at seven.',              under:'at seven',      blocks:['What time','does','he','get up'],   extra:['do','is'],      s2:'They get up at seven.',           q2:'What time do they get up',        alt2:['when do they get up'] },
+  { s1:'We play tennis on Saturday.',       under:'on Saturday',   blocks:['When','do','we','play tennis'],     extra:['does','are'],   s2:'She plays tennis on Saturday.',   q2:'When does she play tennis',       alt2:[] },
+  { s1:'The cat is in the kitchen.',        under:'in the kitchen',blocks:['Where','is','the cat'],             extra:['does','are'],   s2:'The dogs are in the garden.',     q2:'Where are the dogs',              alt2:[] },
+  { s1:'You have breakfast at eight.',      under:'at eight',      blocks:['What time','do','you','have breakfast'], extra:['does','is'], s2:'Alex has breakfast at eight.',    q2:'What time does Alex have breakfast', alt2:['when does alex have breakfast'] },
+  { s1:'They like Roblox.',                 under:'Roblox',        blocks:['What','do','they','like'],          extra:['does','is'],    s2:'Masha likes Roblox.',             q2:'What does Masha like',            alt2:[] }
 ];
 function setupPairs(){ G.items=PAIRS.map((p,i)=>i); G.idx=0; G.score=0; G.mistakes=[]; G.sub=0; renderPair(); }
 function renderPair(){
@@ -413,7 +417,7 @@ function renderPair(){
     G.phase='pair';
     const pool=shuffle(p.blocks.concat(p.extra)); const placed=[];
     $('#game-card').innerHTML=`<div class="task-label">Собери вопрос про подчёркнутое ✏️</div>
-      <div class="statement">${p.s1.replace(/(London|at home|Minecraft|at seven)/,'<span class="under">$1</span>')}</div>
+      <div class="statement">${p.s1.replace(p.under,'<span class="under">'+p.under+'</span>')}</div>
       <div class="slots" id="slots"></div><div class="pool" id="pool"></div>
       <div class="help-row"><button class="go-btn next" id="btn-check">Проверить ✅</button></div>
       <div class="feedback"></div><div id="nz"></div>`;
@@ -431,7 +435,7 @@ function renderPair(){
   } else { // то же самое с новым подлежащим, уже печатаем
     G.phase='pair2'; let attempts=0;
     $('#game-card').innerHTML=`<div class="task-label">А теперь то же самое — но подлежащее другое! Напиши вопрос:</div>
-      <div class="statement">${p.s2.replace(/(London|at home|Minecraft|at seven)/,'<span class="under">$1</span>')}</div>
+      <div class="statement">${p.s2.replace(p.under,'<span class="under">'+p.under+'</span>')}</div>
       <input class="q-input" id="q-input" type="text" autocomplete="off" autocapitalize="off" placeholder="Напиши вопрос…" enterkeyhint="done">
       ${helpRow('Сравни с прошлым вопросом: что изменилось — do или does?', null)}
       <div class="help-row"><button class="go-btn next" id="btn-check">Проверить ✅</button></div>
@@ -470,7 +474,13 @@ const BROKEN = [
   { words:['Where','does','he','lives?'],     steps:[{at:3,opts:['live','lives'],ok:'live'}],                        target:'Where does he live?' },
   { words:['Where','＿','you','live?'],       steps:[{at:1,opts:['do','does','—'],ok:'do'}],                         target:'Where do you live?' },
   { words:['How','old','do','you','be?'],     steps:[{at:2,opts:['are','do','is'],ok:'are'},{at:4,opts:['— убрать —','be?'],ok:'— убрать —'}], target:'How old are you?' },
-  { words:['Does','your','friends','play','Roblox?'], steps:[{at:0,opts:['Do','Does','Are'],ok:'Do'}],               target:'Do your friends play Roblox?' }
+  { words:['Does','your','friends','play','Roblox?'], steps:[{at:0,opts:['Do','Does','Are'],ok:'Do'}],               target:'Do your friends play Roblox?' },
+  { words:['What','＿','your','favourite','game?'],   steps:[{at:1,opts:['is','do','does'],ok:'is'}],                target:'What is your favourite game?' },
+  { words:['Does','she','likes','Roblox?'],           steps:[{at:2,opts:['like','likes'],ok:'like'}],                target:'Does she like Roblox?' },
+  { words:['Where','do','she','live?'],               steps:[{at:1,opts:['does','do','is'],ok:'does'}],              target:'Where does she live?' },
+  { words:['Is','you','twelve?'],                     steps:[{at:0,opts:['Are','Is','Do'],ok:'Are'}],                target:'Are you twelve?' },
+  { words:['What time','＿','they','get','up?'],      steps:[{at:1,opts:['do','does','are'],ok:'do'}],               target:'What time do they get up?' },
+  { words:['Does','they','play','football?'],         steps:[{at:0,opts:['Do','Does','Is'],ok:'Do'}],                target:'Do they play football?' }
 ];
 function setupFix(){ G.items=shuffle(BROKEN); G.idx=0; G.score=0; G.mistakes=[]; renderFix(); }
 function renderFix(){
@@ -599,7 +609,11 @@ const CHECK = [
   { s:'Ben is at school.',            under:'at school',  q:'Where is Ben',                 alt:[],                    tag:'beDo' },
   { s:'Ben lives in Oxford.',         under:'in Oxford',  q:'Where does Ben live',          alt:[],                    tag:'doDoes' },
   { s:'Your friends like music.',     under:null,         q:'Do your friends like music',   alt:[],                    tag:'beDo' },
-  { s:'Anna gets up at eight.',       under:'at eight',   q:'What time does Anna get up',   alt:['when does anna get up'], tag:'word' }
+  { s:'Anna gets up at eight.',       under:'at eight',   q:'What time does Anna get up',   alt:['when does anna get up'], tag:'word' },
+  { s:'Tom is twelve.',               under:'twelve',     q:'How old is Tom',               alt:[],                    tag:'word' },
+  { s:'His dad works in a hospital.', under:'in a hospital', q:'Where does his dad work',   alt:[],                    tag:'doDoes' },
+  { s:'They watch films on Sundays.', under:'on Sundays', q:'When do they watch films',     alt:[],                    tag:'word' },
+  { s:'Kate goes to school by bus.',  under:'by bus',     q:'How does Kate go to school',   alt:[],                    tag:'doDoes' }
 ];
 function setupCheck(){ G.items=CHECK.map((c,i)=>i); G.idx=0; G.score=0; G.mistakes=[]; renderCheck(); }
 function renderCheck(){
