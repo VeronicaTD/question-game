@@ -517,50 +517,77 @@ function renderFix(){
 
 // ================= ЭТАП 8. Секретный персонаж =================
 const CHARS = [
-  { name:'Mia', emoji:'👧',  age:'12', city:'London', game:'Minecraft', after:true  },
-  { name:'Leo', emoji:'🧒',  age:'13', city:'London', game:'Roblox',    after:false },
-  { name:'Ava', emoji:'👱‍♀️', age:'13', city:'Oxford', game:'Minecraft', after:false },
-  { name:'Max', emoji:'👦',  age:'12', city:'Oxford', game:'Roblox',    after:true  }
+  { name:'Mia', emoji:'👧',  age:'12', city:'London', game:'Minecraft', after:'Yes' },
+  { name:'Leo', emoji:'🧒',  age:'13', city:'London', game:'Roblox',    after:'No'  },
+  { name:'Ava', emoji:'👱‍♀️', age:'13', city:'Oxford', game:'Minecraft', after:'No'  },
+  { name:'Max', emoji:'👦',  age:'12', city:'Oxford', game:'Roblox',    after:'Yes' }
 ];
-const QS = [
-  { label:'🎂 age',            q:'How old is this person?',                 f:c=>c.age },
-  { label:'🏠 live',           q:'Where does this person live?',            f:c=>c.city },
-  { label:'🎮 favourite game', q:'What is this person\u2019s favourite game?', f:c=>c.game },
-  { label:'🏫 play after school', q:'Does this person play after school?',  f:c=>c.after?'Yes':'No' }
+const TOPICS = [
+  { label:'🎂 Age',             key:'age',   model:'How old is this person?',                  clue:c=>'This person is '+(c.age==='12'?'twelve':'thirteen')+'.' },
+  { label:'🏠 City',            key:'city',  model:'Where does this person live?',             clue:c=>'This person lives in '+c.city+'.' },
+  { label:'🎮 Favourite game',  key:'game',  model:'What is this person\u2019s favourite game?', clue:c=>'This person\u2019s favourite game is '+c.game+'.' },
+  { label:'🏫 After school',    key:'after', model:'Does this person play after school?',      clue:c=>(c.after==='Yes'?'Yes, this person plays after school.':'No, this person doesn\u2019t play after school.') }
 ];
-function setupSecret(){ G.items=[1,2]; G.idx=0; G.score=0; G.mistakes=[]; G.secret=CHARS[Math.floor(Math.random()*4)]; renderSecret(); }
+function setupSecret(){ G.items=[1,2]; G.idx=0; G.score=0; G.mistakes=[]; startRound(); }
+function startRound(){
+  G.secret=CHARS[Math.floor(Math.random()*CHARS.length)];
+  G.excluded=new Set(); G.clues=[]; G.asked=new Set(); G.roundWrong=false; G.hintUsed=false;
+  renderSecret();
+}
 function renderSecret(){
   prog('🕵️'); G.phase='secret';
-  const used=[];
-  $('#game-card').innerHTML=`<div class="task-label">Я загадала персонажа! Задавай вопросы ВСЛУХ 🎤, узнавай ответы и вычёркивай лишних.<br>Остался один — нажми на него!</div>
-    <div class="char-grid">${CHARS.map((c,i)=>`<button class="char-card" data-i="${i}"><span class="p-emoji">${c.emoji}</span>${c.name}</button>`).join('')}</div>
-    <div class="opt-row" id="qs">${QS.map((q,i)=>`<button class="opt-btn" data-i="${i}">${q.label}</button>`).join('')}</div>
+  $('#game-card').innerHTML=`<div class="task-label">Я загадала одного из них! 🤫 Раунд ${G.idx+1}/2<br>
+    Выбирай тему → задавай вопрос ВСЛУХ 🎤 → открывай ответ → вычёркивай лишних.</div>
+    <div class="opt-row" id="topics">${TOPICS.map((t,i)=>`<button class="opt-btn" data-i="${i}" ${G.asked.has(i)?'disabled':''}>${t.label}</button>`).join('')}</div>
+    <div id="ask-zone" style="margin:10px 0"></div>
+    <div id="clues">${G.clues.map(c=>`<div class="report-row"><span class="r-emoji">💬</span><span class="r-name">${c}</span></div>`).join('')||'<div class="say-note">Ответы появятся здесь</div>'}</div>
+    <div class="char-grid">${CHARS.map((c,i)=>`
+      <div class="char-card ${G.excluded.has(i)?'crossed':''}" style="cursor:default">
+        <span class="p-emoji">${c.emoji}</span><b>${c.name}</b>
+        <div style="font-size:.9rem;font-weight:normal;text-align:left;margin:8px 0;line-height:1.5">
+          🎂 Age: <b>${c.age}</b><br>🏠 City: <b>${c.city}</b><br>🎮 Game: <b>${c.game}</b><br>🏫 After school: <b>${c.after}</b></div>
+        <button class="help-btn exc" data-i="${i}" style="font-size:.9rem;padding:6px 12px">${G.excluded.has(i)?'↩️ Вернуть':'✂️ Исключить'}</button>
+        <button class="go-btn next pick" data-i="${i}" style="font-size:.95rem;padding:8px 14px;margin-top:6px">👉 Выбрать</button>
+      </div>`).join('')}</div>
     <div class="feedback"></div>`;
-  document.querySelectorAll('#qs .opt-btn').forEach(b=>{
+
+  document.querySelectorAll('#topics .opt-btn').forEach(b=>{
     b.onclick=()=>{
-      const q=QS[Number(b.dataset.i)];
-      if(used.includes(Number(b.dataset.i))) return;
-      used.push(Number(b.dataset.i)); b.disabled=true;
-      fb(`Спроси вслух: <b>${q.q}</b> 📣<br>Ответ: <b>${q.f(G.secret)}</b>`, true);
+      const i=Number(b.dataset.i); if(G.asked.has(i)) return;
+      const t=TOPICS[i];
+      $('#ask-zone').innerHTML=`<div class="answer-card"><span class="a-label">${t.label}</span>Ask your question! 🎤<br>
+        <span style="font-size:1rem;font-weight:normal">Спроси вслух — потом открой ответ.</span></div>
+        <div class="help-row">
+          <button class="go-btn next" id="reveal">Открыть ответ 👀</button>
+          <button class="help-btn" id="help-q">💡 Помощь (образец вопроса)</button></div>`;
+      $('#help-q').onclick=()=>{ G.roundWrong=G.roundWrong; G.hintUsed=true;
+        $('#help-q').outerHTML=`<div class="hint-box" style="display:block">${t.model}</div>`; };
+      $('#reveal').onclick=()=>{
+        G.asked.add(i);
+        G.clues.push(t.label+': '+t.clue(G.secret));
+        renderSecret();
+      };
     };
   });
-  document.querySelectorAll('.char-card').forEach(b=>{
+  document.querySelectorAll('.exc').forEach(b=>{
+    b.onclick=()=>{ const i=Number(b.dataset.i);
+      G.excluded.has(i)?G.excluded.delete(i):G.excluded.add(i); renderSecret(); };
+  });
+  document.querySelectorAll('.pick').forEach(b=>{
     b.onclick=()=>{
       if(G.phase!=='secret') return;
-      const c=CHARS[Number(b.dataset.i)];
-      if(!b.classList.contains('crossed') && used.length<2){ b.classList.add('crossed'); return; }
-      if(b.classList.contains('crossed')){ b.classList.remove('crossed'); return; }
-      G.phase='done';
+      const c=CHARS[Number(b.dataset.i)]; G.phase='done';
       if(c===G.secret){
-        b.classList.add('won');
-        const alone = G.stat; mark(0,null);
-        fb(`🎉 Это ${c.name}! Ты раскрыла дело, детектив! 🕵️`, true);
-        $('.feedback').innerHTML+=nextBtn(G.idx===0?'Второй раунд ▶':'Финиш ▶');
-        bindNext(()=>{ G.idx++; if(G.idx<2){ G.secret=CHARS[Math.floor(Math.random()*4)]; renderSecret(); } else stageDone(); });
+        if(G.hintUsed){ G.stat.hint++; G.mistakes.push('Персонаж: понадобился образец вопроса'); }
+        else G.stat.sama++;
+        if(G.roundWrong){ /* ошибочная попытка уже записана */ } else G.score++;
+        fb(`🎉 Это ${c.name}! Дело раскрыто, детектив!`, true);
+        $('.feedback').innerHTML+=`<div class="help-row"><button class="go-btn next" id="next-round">${G.idx===0?'Новый раунд ▶':'Финиш ▶'}</button></div>`;
+        $('#next-round').onclick=()=>{ G.idx++; G.hintUsed=false; G.idx<2?startRound():stageDone(); };
       } else {
-        G.mistakes.push('Секретный персонаж: выбрала '+c.name+', загадана '+G.secret.name);
-        G.stat.shown++;
-        fb(`Не ${c.name}! Проверь ответы ещё раз 🔍`, false);
+        G.roundWrong=true; G.stat.shown++;
+        G.mistakes.push('Персонаж: выбрала '+c.name+', загадан '+G.secret.name);
+        fb(`Не ${c.name}! Сверь ответы в истории 💬 с анкетами ещё раз 🔍`, false);
         G.phase='secret';
       }
     };
