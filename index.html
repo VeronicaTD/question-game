@@ -194,11 +194,11 @@ function stageDone(){
     <div class="mini-result">⭐ ${G.score} из ${G.items.length}</div>`;
   if(G.mistakes.length) html+=`<div class="mini-mistakes"><b>Разобрать вместе:</b><ul style="margin:4px 0 0 18px">${G.mistakes.map(m=>`<li>${m}</li>`).join('')}</ul></div>`;
   else html+=`<div class="mini-result">Без единой ошибки! 🎉</div>`;
-  html+=`<div class="help-row"><button class="go-btn" id="btn-next">${last?'К результатам 🏁':'Следующий этап ▶'}</button>
-    <button class="help-btn" id="btn-again">🔄 Ещё раз</button></div>`;
+  html+=`<div class="help-row"><button class="go-btn" id="btn-tnext">${last?'К результатам 🏁':'Следующий этап ▶'}</button>
+    <button class="help-btn" id="btn-tagain">🔄 Ещё раз</button></div>`;
   $('#trans-card').innerHTML=html;
-  $('#btn-next').onclick=()=>last?finalReport():introStage(G.stage+1);
-  $('#btn-again').onclick=()=>{ G.report[G.stage]=null; STAGES[G.stage].setup(); };
+  $('#btn-tnext').onclick=()=>last?finalReport():introStage(G.stage+1);
+  $('#btn-tagain').onclick=()=>{ G.report[G.stage]=null; show('#game'); STAGES[G.stage].setup(); };
 }
 function finalReport(){
   show('#end'); $('#progress').textContent='🏁 Урок завершён!'; $('#stagefill').style.width='100%';
