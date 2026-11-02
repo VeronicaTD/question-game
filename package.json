@@ -1,0 +1,9 @@
+{
+  "name": "question-game",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Собери вопрос — тренажёр do / to be / can / have got",
+  "scripts": {
+    "dev": "node server.js"
+  }
+}

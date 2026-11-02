@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Собери вопрос! 🐯 — интерактивный урок</title>
+<style>
+  :root {
+    --c-do: #3b82f6;
+    --c-be: #22c55e;
+    --c-can: #f97316;
+    --c-lex: #eab308;
+    --ink: #1e293b;
+    --bg1: #312e81;
+    --bg2: #4c1d95;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Trebuchet MS', 'Segoe UI', Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg1), var(--bg2));
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+  h1, h2 { color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.25); }
+  button { font-family: inherit; cursor: pointer; border: none; }
+
+  /* ===== top bar ===== */
+  #topbar {
+    width: 100%; max-width: 860px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; gap: 8px;
+  }
+  #progress { color: #fff; font-size: 1.15rem; font-weight: bold; text-align: center; }
+  .bar-btn {
+    background: #ffffff22; color: #fff; border: 2px solid #ffffff55;
+    border-radius: 12px; padding: 8px 14px; font-size: 1rem; font-weight: bold; white-space: nowrap;
+  }
+  .bar-btn:hover { background: #ffffff3a; }
+  #btn-algo { background: var(--c-lex); color: var(--ink); border-color: #00000033; }
+
+  /* ===== общий прогресс-бар урока ===== */
+  #stagebar {
+    width: 100%; max-width: 860px; height: 14px; background: #ffffff2a;
+    border-radius: 8px; overflow: hidden; margin-bottom: 14px;
+  }
+  #stagefill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--c-lex), var(--c-can));
+    border-radius: 8px; transition: width .4s;
+  }
+
+  /* ===== screens ===== */
+  .screen { width: 100%; max-width: 860px; display: none; }
+  .screen.active { display: block; }
+
+  /* ===== старт и заставки этапов ===== */
+  .big-card {
+    background: #fff; border-radius: 20px; border-bottom: 8px solid #00000033;
+    padding: 28px 22px; text-align: center; margin-top: 10px;
+  }
+  .stage-emoji { font-size: 4rem; display: block; }
+  .stage-kicker { color: #94a3b8; font-weight: bold; font-size: 1.05rem; margin: 8px 0 4px; }
+  .stage-name { font-size: 2rem; font-weight: bold; color: var(--ink); margin-bottom: 8px; }
+  .stage-goal { font-size: 1.2rem; color: #475569; margin-bottom: 18px; line-height: 1.5; }
+  .go-btn {
+    background: var(--c-be); color: #fff; font-size: 1.4rem; font-weight: bold;
+    border-radius: 16px; padding: 16px 44px; border-bottom: 6px solid #00000044;
+  }
+  .go-btn:hover { transform: scale(1.04); }
+  .mini-result { font-size: 1.3rem; font-weight: bold; color: #15803d; margin: 6px 0 2px; }
+  .mini-mistakes {
+    text-align: left; background: #fff7ed; border-radius: 12px;
+    padding: 10px 16px; margin: 12px auto; font-size: 1rem; max-width: 560px;
+  }
+  .mini-mistakes b { color: #c2410c; }
+
+  .task-label { font-size: 1.05rem; color: #64748b; font-weight: bold; margin-bottom: 14px; }
+
+  /* ===== verb hunt ===== */
+  .words { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 14px 0 22px; }
+  .word {
+    background: #f1f5f9; border: 3px solid #cbd5e1; border-radius: 12px;
+    font-size: 1.7rem; font-weight: bold; padding: 10px 18px;
+  }
+  .word:hover { background: #e2e8f0; }
+  .word.hit { border-color: var(--c-lex); background: #fef9c3; animation: pop .3s; }
+  .cat-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .cat-btn {
+    color: #fff; font-size: 1.25rem; font-weight: bold;
+    border-radius: 14px; padding: 14px 20px; border-bottom: 5px solid #00000044;
+  }
+  .cat-btn.lex { background: var(--c-lex); color: var(--ink); }
+  .cat-btn.be { background: var(--c-be); }
+  .cat-btn.can { background: var(--c-can); }
+
+  /* ===== sort ===== */
+  .q-card { font-size: 2rem; font-weight: bold; margin: 6px 0 22px; line-height: 1.35; }
+  .q-card .verb-hint { background: #fef9c3; border-radius: 8px; padding: 0 6px; box-shadow: 0 0 0 3px var(--c-lex); }
+  .baskets { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .basket {
+    color: #fff; border-radius: 16px; padding: 18px 16px; min-width: 150px;
+    font-size: 1.25rem; font-weight: bold; border-bottom: 6px solid #00000044;
+  }
+  .basket small { display: block; font-size: .85rem; font-weight: normal; opacity: .9; }
+  .basket.do { background: var(--c-do); }
+  .basket.be { background: var(--c-be); }
+  .basket.can { background: var(--c-can); }
+  .basket.got { background: var(--c-be); }
+  .basket.needdo { background: var(--c-do); }
+
+  /* ===== question words ===== */
+  .rus-word {
+    font-size: 2.4rem; font-weight: bold; color: #0c4a6e;
+    background: #e0f2fe; border-radius: 14px; padding: 14px 28px; margin: 8px 0 20px;
+    display: inline-block;
+  }
+  .gap-q { font-size: 1.9rem; font-weight: bold; margin: 6px 0 6px; line-height: 1.4; }
+  .gap-q .gap { display: inline-block; min-width: 90px; border-bottom: 4px dashed #a855f7; color: #a855f7; }
+  .gap-a {
+    font-size: 1.3rem; color: #fff; background: #64748b; border-radius: 12px;
+    padding: 10px 18px; display: inline-block; margin-bottom: 18px;
+  }
+  .opt-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .opt-btn {
+    background: #0ea5e9; color: #fff; font-size: 1.4rem; font-weight: bold;
+    border-radius: 14px; padding: 14px 22px; border-bottom: 5px solid #00000044;
+  }
+  .opt-btn:hover { transform: scale(1.05); }
+
+  /* ===== worksheet (рабочий лист) ===== */
+  .ws-statement {
+    font-size: 1.7rem; font-weight: bold; background: #f0f9ff; border: 3px solid #7dd3fc;
+    border-radius: 14px; padding: 16px 20px; margin: 6px 0 18px; color: #0c4a6e; line-height: 1.5;
+  }
+  .ws-statement .under {
+    background: #fef9c3; box-shadow: 0 3px 0 var(--c-lex);
+    border-radius: 6px; padding: 0 4px;
+  }
+  .ws-row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  .ws-prefix {
+    background: #a855f7; color: #fff; font-size: 1.5rem; font-weight: bold;
+    border-radius: 12px; padding: 12px 18px; border-bottom: 5px solid #00000033;
+  }
+  .q-input {
+    flex: 1; min-width: 240px; max-width: 480px; font-size: 1.4rem; font-family: inherit; font-weight: bold;
+    padding: 12px 16px; border: 3px solid #94a3b8; border-radius: 14px;
+    color: var(--ink); background: #f8fafc; outline: none;
+  }
+  .q-input:focus { border-color: #a855f7; background: #fff; }
+  .det-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+  .hint-btn {
+    background: #fff; border: 3px solid var(--c-lex); border-bottom-width: 6px;
+    color: #a16207; font-size: 1.1rem; font-weight: bold; border-radius: 14px; padding: 12px 20px;
+  }
+  .giveup-btn {
+    background: #fff; border: 3px solid #94a3b8; border-bottom-width: 6px;
+    color: #64748b; font-size: 1.1rem; font-weight: bold; border-radius: 14px; padding: 12px 20px;
+  }
+  .hint-box {
+    display: none; font-size: 1.2rem; font-weight: bold; color: #a16207;
+    background: #fef9c3; border-radius: 12px; padding: 12px 18px; margin-top: 14px;
+  }
+  .teacher-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+
+  /* ===== detective ===== */
+  .answer-card {
+    font-size: 1.6rem; font-weight: bold; background: #fdf2f8; border: 3px solid #f9a8d4;
+    border-radius: 14px; padding: 16px 20px; margin: 6px 0 18px; color: #9d174d; line-height: 1.4;
+  }
+  .answer-card .a-label { display: block; font-size: .95rem; color: #ec4899; margin-bottom: 4px; }
+
+  /* ===== constructor / mission ===== */
+  .statement {
+    font-size: 1.4rem; background: #eef2ff; border-radius: 12px;
+    padding: 12px 16px; margin-bottom: 18px; font-weight: bold; color: #4338ca;
+  }
+  .mission {
+    font-size: 1.6rem; background: #faf5ff; border: 3px solid #d8b4fe; border-radius: 14px;
+    padding: 18px; margin-bottom: 18px; font-weight: bold; color: #7e22ce; line-height: 1.4;
+  }
+  .mission .m-label { display: block; font-size: 1rem; color: #a855f7; margin-bottom: 6px; }
+  .slots, .pool { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 64px; margin-bottom: 14px; }
+  .slots { background: #f8fafc; border: 3px dashed #cbd5e1; border-radius: 14px; padding: 10px; }
+  .block {
+    background: #fff; border: 3px solid #94a3b8; border-bottom-width: 6px;
+    border-radius: 12px; font-size: 1.45rem; font-weight: bold; padding: 10px 18px;
+  }
+  .block:hover { transform: scale(1.05); }
+  .block.q-word { border-color: #a855f7; color: #7e22ce; }
+  .check-btn {
+    background: var(--c-be); color: #fff; font-size: 1.3rem; font-weight: bold;
+    border-radius: 14px; padding: 14px 36px; border-bottom: 6px solid #00000044; margin-top: 6px;
+  }
+  .check-btn.reveal { background: var(--c-lex); color: var(--ink); }
+  .check-btn.hard { background: #ef4444; }
+  .mode-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+  .mode-btn {
+    background: #fff; border: 3px solid #a855f7; border-bottom-width: 6px;
+    border-radius: 16px; padding: 18px 24px; font-size: 1.2rem; font-weight: bold; color: #7e22ce;
+  }
+  .mode-btn:hover { transform: scale(1.04); }
+  .reveal-answer {
+    font-size: 1.7rem; font-weight: bold; color: #15803d; background: #f0fdf4;
+    border-radius: 12px; padding: 14px 18px; margin: 14px 0;
+  }
+  .say-note { font-size: 1.15rem; color: #64748b; margin-top: 10px; }
+
+  /* ===== feedback ===== */
+  .feedback { min-height: 44px; font-size: 1.25rem; font-weight: bold; margin-top: 14px; }
+  .feedback.ok { color: #15803d; }
+  .feedback.no { color: #dc2626; }
+  .shake { animation: shake .4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+  @keyframes pop { 50% { transform: scale(1.15); } }
+
+  /* ===== финальный отчёт ===== */
+  .report-row {
+    display: flex; align-items: center; gap: 12px; text-align: left;
+    background: #f8fafc; border-radius: 12px; padding: 10px 16px; margin: 6px 0; font-size: 1.1rem;
+  }
+  .report-row .r-emoji { font-size: 1.5rem; }
+  .report-row .r-name { flex: 1; font-weight: bold; }
+  .report-row .r-score { font-weight: bold; color: #15803d; }
+  .report-row .r-score.low { color: #dc2626; }
+  #end .score { font-size: 3rem; font-weight: bold; margin: 10px 0; }
+  #end .mistakes { text-align: left; background: #fff7ed; border-radius: 12px; padding: 14px 18px; margin: 14px 0; font-size: 1rem; }
+  #end .mistakes b { color: #c2410c; }
+  .end-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+  .end-btns .check-btn { background: var(--c-do); }
+  .end-btns .check-btn.menu { background: #64748b; }
+
+  /* ===== overlays ===== */
+  .overlay {
+    position: fixed; inset: 0; background: #000000aa;
+    display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10;
+  }
+  .overlay.open { display: flex; }
+  .algo-card {
+    background: #fff; border-radius: 20px; padding: 26px; max-width: 560px; width: 100%;
+    border-bottom: 8px solid #00000033; max-height: 85vh; overflow-y: auto;
+  }
+  .algo-card h2 { color: var(--ink); text-shadow: none; text-align: center; margin-bottom: 16px; }
+  .algo-step { display: flex; gap: 12px; align-items: center; font-size: 1.2rem; font-weight: bold; margin: 12px 0; }
+  .algo-step .num {
+    min-width: 40px; height: 40px; border-radius: 50%; background: var(--c-lex);
+    display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+  }
+  .tag { border-radius: 8px; padding: 2px 10px; color: #fff; }
+  .tag.do { background: var(--c-do); } .tag.be { background: var(--c-be); }
+  .tag.can { background: var(--c-can); } .tag.lex { background: var(--c-lex); color: var(--ink); }
+  .algo-close { display: block; margin: 18px auto 0; }
+  .map-row {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px;
+    padding: 10px 16px; margin: 6px 0; font-size: 1.1rem; font-weight: bold; text-align: left;
+  }
+  .map-row:hover { background: #eef2ff; }
+  .map-row.done { background: #f0fdf4; border-color: #86efac; }
+  .map-row.current { background: #fef9c3; border-color: var(--c-lex); }
+  .map-row .m-status { margin-left: auto; color: #64748b; font-size: .95rem; }
+
+  @media (max-width: 560px) {
+    .word { font-size: 1.3rem; padding: 8px 12px; }
+    .q-card, .gap-q { font-size: 1.5rem; }
+    .block { font-size: 1.15rem; padding: 8px 12px; }
+    .mission, .ws-statement { font-size: 1.3rem; }
+    .rus-word { font-size: 1.8rem; }
+    .q-input { font-size: 1.15rem; }
+    .answer-card { font-size: 1.3rem; }
+    .stage-name { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <button class="bar-btn" id="btn-map">🗺 Карта урока</button>
+  <div id="progress"></div>
+  <button class="bar-btn" id="btn-algo">🐯 Алгоритм</button>
+</div>
+<div id="stagebar"><div id="stagefill"></div></div>
+
+<!-- СТАРТ УРОКА -->
+<div class="screen active" id="start">
+  <div class="big-card">
+    <span class="stage-emoji">🐯</span>
+    <div class="stage-kicker">интерактивный урок</div>
+    <div class="stage-name">Собери вопрос!</div>
+    <div class="stage-goal">
+      8 этапов · около 50 минут<br>
+      от слов-ключей — до настоящего детективного расследования 🕵️<br><br>
+      <b>do · does · am · is · are · can · have got</b>
+    </div>
+    <button class="go-btn" id="btn-start">Начать урок ▶</button>
+  </div>
+</div>
+
+<!-- ИГРА -->
+<div class="screen" id="game">
+  <div class="big-card" id="game-card"></div>
+</div>
+
+<!-- ПЕРЕХОД МЕЖДУ ЭТАПАМИ -->
+<div class="screen" id="trans">
+  <div class="big-card" id="trans-card"></div>
+</div>
+
+<!-- ФИНАЛЬНЫЙ ОТЧЁТ -->
+<div class="screen" id="end">
+  <div class="big-card" id="end-card"></div>
+</div>
+
+<!-- АЛГОРИТМ (опора, всегда доступна) -->
+<div class="overlay" id="algo-overlay">
+  <div class="algo-card">
+    <h2>🐯 Как собрать вопрос</h2>
+    <div class="algo-step"><span class="num">1</span> Найди <span class="tag lex">глагол</span></div>
+    <div class="algo-step"><span class="num">2</span> Смысловой? → <span class="tag do">do / does</span></div>
+    <div class="algo-step"><span class="num">3</span> to be? → <span class="tag be">am / is / are</span> перестановка</div>
+    <div class="algo-step"><span class="num">4</span> can → <span class="tag can">can</span> перестановка</div>
+    <button class="check-btn algo-close" id="algo-close">Понятно!</button>
+  </div>
+</div>
+
+<!-- КАРТА УРОКА (для учителя) -->
+<div class="overlay" id="map-overlay">
+  <div class="algo-card">
+    <h2>🗺 Карта урока</h2>
+    <div id="map-list"></div>
+    <button class="check-btn algo-close" id="map-close">Закрыть</button>
+  </div>
+</div>
+
+<script>
+// ================= ДАННЫЕ =================
+const HUNT = [
+  { words: ['She','plays','tennis.'], verb: 1, cat: 'lex' },
+  { words: ['He','is','happy.'],      verb: 1, cat: 'be'  },
+  { words: ['I','can','swim.'],       verb: 1, cat: 'can' },
+  { words: ['They','like','music.'],  verb: 1, cat: 'lex' },
+  { words: ['You','are','twelve.'],   verb: 1, cat: 'be'  },
+  { words: ['We','play','Minecraft.'],verb: 1, cat: 'lex' },
+  { words: ['She','can','dance.'],    verb: 1, cat: 'can' },
+  { words: ['You','live','in','Moscow.'], verb: 1, cat: 'lex' },
+  { words: ['It','is','fun.'],        verb: 1, cat: 'be'  }
+];
+
+const SORT_R1 = [
+  { q: 'Do you play the piano?',   cat: 'do',  verb: 'play'  },
+  { q: 'Does she like football?',  cat: 'do',  verb: 'like'  },
+  { q: 'Do they live in Moscow?',  cat: 'do',  verb: 'live'  },
+  { q: 'Is he your friend?',       cat: 'be',  verb: null    },
+  { q: 'Are you happy?',           cat: 'be',  verb: null    },
+  { q: 'Is Roblox fun?',           cat: 'be',  verb: null    },
+  { q: 'Can you swim?',            cat: 'can', verb: 'swim'  },
+  { q: 'Can she dance?',           cat: 'can', verb: 'dance' },
+  { q: 'Can Steve fly?',           cat: 'can', verb: 'fly'   },
+  { q: 'Do you like Minecraft?',   cat: 'do',  verb: 'like'  },
+  { q: 'Is the guitar cool?',      cat: 'be',  verb: null    },
+  { q: 'Can creepers swim?',       cat: 'can', verb: 'swim'  }
+];
+
+const SORT_R2 = [
+  { q: 'Does he play the drums?',          cat: 'do',  verb: 'play' },
+  { q: 'Are they your friends?',           cat: 'be',  verb: null   },
+  { q: 'Can you jump?',                    cat: 'can', verb: 'jump' },
+  { q: 'Do we have Maths today?',          cat: 'do',  verb: 'have' },
+  { q: 'Is she tired?',                    cat: 'be',  verb: null   },
+  { q: 'Does your cat like fish?',         cat: 'do',  verb: 'like' },
+  { q: 'Can Alex build a house?',          cat: 'can', verb: 'build'},
+  { q: 'Do you play basketball?',          cat: 'do',  verb: 'play' },
+  { q: 'Is Minecraft your favourite game?',cat: 'be',  verb: null   },
+  { q: 'Can dogs swim?',                   cat: 'can', verb: 'swim' }
+];
+
+const GOT = [
+  { q: 'Have you got a bike?',    cat: 'got' },
+  { q: 'Do you have a pet?',      cat: 'do'  },
+  { q: 'Has she got a sister?',   cat: 'got' },
+  { q: 'Do they have a ball?',    cat: 'do'  },
+  { q: 'Have we got time?',       cat: 'got' },
+  { q: 'Does he have a guitar?',  cat: 'do'  }
+];
+
+const BUILD = [
+  { statement: 'You play the guitar.', answer: ['What','do','you','play'],            extra: ['does','are'] },
+  { statement: 'She plays tennis.',    answer: ['What sports','does','she','play'],   extra: ['do','is'] },
+  { statement: 'They like Roblox.',    answer: ['What','do','they','like'],           extra: ['does','can'] },
+  { statement: 'He lives in Moscow.',  answer: ['Where','does','he','live'],          extra: ['do','are'] },
+  { statement: 'You are happy.',       answer: ['Are','you','happy'],                 extra: ['Do','play'] },
+  { statement: 'She can swim.',        answer: ['Can','she','swim'],                  extra: ['Does','play'] }
+];
+
+// Рабочий лист: подчёркнутая часть → допиши вопрос после данного слова
+const WORKSHEET = [
+  { s: ['Masha plays Minecraft ', 'at home', '.'],       word: 'Where',     q: 'Where does Masha play Minecraft',   alt: [], hint: 'Masha = she → does. А play остаётся без -s: does … play!' },
+  { s: ['Her friend lives ', 'in London', '.'],          word: 'Where',     q: 'Where does her friend live',        alt: [], hint: 'friend = she → does, lives → live.' },
+  { s: ['Susan plays ', 'the piano', '.'],               word: 'What',      q: 'What does Susan play',              alt: [], hint: 'Susan = she → does, plays → play.' },
+  { s: ['He gets up ', 'at seven o\u2019clock', '.'],    word: 'What time', q: 'What time does he get up',          alt: [], hint: 'he → does. get up — два слова, оба остаются.' },
+  { s: ['They play tennis ', 'on Saturdays', '.'],       word: 'When',      q: 'When do they play tennis',          alt: [], hint: 'they → do. Про дни недели — When 📅' },
+  { s: ['Dave goes to school ', 'by bus', '.'],          word: 'How',       q: 'How does Dave go to school',        alt: [], hint: 'Каким образом → How. Dave = he → does, goes → go!' },
+  { s: ['Her sister likes ', 'Roblox', '.'],             word: 'What',      q: 'What does her sister like',         alt: [], hint: 'sister = she → does, likes → like.' },
+  { s: ['Steve swims ', 'in the river', '.'],            word: 'Where',     q: 'Where does Steve swim',             alt: [], hint: 'Место → Where 📍 Steve = he → does.' },
+  { s: ['Alex has breakfast ', 'at 8 o\u2019clock', '.'],word: 'What time', q: 'What time does Alex have breakfast',alt: [], hint: 'Часы → What time 🕐 Alex = he → does, has → have!' },
+  { s: ['They watch films ', 'in the evening', '.'],     word: 'When',      q: 'When do they watch films',          alt: [], hint: 'they → do. Вечером — не точные часы → When.' }
+];
+
+// Миссии: коммуникативная задача → вопрос
+const MISSIONS = [
+  { task: 'Узнай, во сколько я встаю',            answer: ['What time','do','you','get up'],    extra: ['does','are'],  text: 'What time do you get up?' },
+  { task: 'Узнай, какие виды спорта мне нравятся', answer: ['What sports','do','you','like'],    extra: ['does','can'],  text: 'What sports do you like?' },
+  { task: 'Узнай, умею ли я плавать',              answer: ['Can','you','swim'],                 extra: ['Do','Are'],    text: 'Can you swim?' },
+  { task: 'Узнай, есть ли у меня домашний питомец', answer: ['Have','you','got a pet'],          extra: ['Do','Has'],    text: 'Have you got a pet?' },
+  { task: 'Узнай, где я живу',                     answer: ['Where','do','you','live'],          extra: ['does','are'],  text: 'Where do you live?' },
+  { task: 'Узнай мою любимую игру',                answer: ['What','is','your favourite game'],  extra: ['do','are'],    text: 'What is your favourite game?' },
+  { task: 'Узнай, на каком инструменте я играю',   answer: ['What instrument','do','you','play'],extra: ['does','is'],   text: 'What instrument do you play?' },
+  { task: 'Узнай, сколько мне лет',                answer: ['How old','are','you'],              extra: ['do','is'],     text: 'How old are you?' },
+  { task: 'Узнай, что я ем на завтрак',            answer: ['What','do','you','have for breakfast'], extra: ['does','are'], text: 'What do you have for breakfast?' },
+  { task: 'Узнай, есть ли у меня велосипед',       answer: ['Have','you','got a bike'],          extra: ['Do','Has'],    text: 'Have you got a bike?' }
+];
+
+// Детектив: дан ответ → написать вопрос целиком
+const DETECT = [
+  { a: 'Winter starts in June in Australia.',        q: 'When does winter start in Australia',   alt: [],                              hint: 'Про месяц — не часы! 📅 Смысловой глагол starts, winter = it → does. Начни с When does…' },
+  { a: 'Penguins live in the Antarctic.',            q: 'Where do penguins live',                alt: [],                              hint: 'Место 📍 Смысловой глагол live, penguins = they → do. Начни с Where do…' },
+  { a: 'No, I don\u2019t like football.',            q: 'Do you like football',                  alt: [],                              hint: 'Ответ «No, I don\u2019t» — значит вопрос начинается с Do you…' },
+  { a: 'Dave lives in London.',                      q: 'Where does Dave live',                  alt: [],                              hint: 'Место 📍 Смысловой глагол live, Dave = he → does. Начни с Where does…' },
+  { a: 'Yes, my sister plays the guitar.',           q: 'Does your sister play the guitar',      alt: [],                              hint: 'Ответ «Yes» + sister = she → вопрос начинается с Does…' },
+  { a: 'I get up at 7 o\u2019clock.',                q: 'What time do you get up',               alt: ['when do you get up'],          hint: 'Точное время, часы 🕐 → What time. Глагол get up смысловой → do.' },
+  { a: 'Yes, I can swim.',                           q: 'Can you swim',                          alt: [],                              hint: 'Ответ «Yes, I can» — значит вопрос начинается с Can you…' },
+  { a: 'My favourite game is Minecraft.',            q: 'What is your favourite game',           alt: [],                              hint: 'Вещь 🎮 + здесь to be → перестановка: What is…' },
+  { a: 'I have breakfast at 8 o\u2019clock.',        q: 'What time do you have breakfast',       alt: ['when do you have breakfast'],  hint: 'Точное время 🕐 Глагол have смысловой → do.' },
+  { a: 'No, I haven\u2019t got a brother.',          q: 'Have you got a brother',                alt: ['do you have a brother'],       hint: '«haven\u2019t got» → вопрос перестановкой: Have you got…' },
+  { a: 'She plays tennis.',                          q: 'What sports does she play',             alt: ['what does she play'],          hint: 'Вид спорта ⚽ she → does. Начни с What sports does…' },
+  { a: 'Yes, he has got a bike.',                    q: 'Has he got a bike',                     alt: ['does he have a bike'],         hint: '«has got» → перестановка: Has he got…' }
+];
+
+const QW_MATCH = [
+  { rus: 'где?',          eng: 'where',     hint: 'где = место 📍' },
+  { rus: 'что? какой?',   eng: 'what',      hint: 'что = вещь, предмет 🎸' },
+  { rus: 'когда?',        eng: 'when',      hint: 'когда = время вообще 📅' },
+  { rus: 'как?',          eng: 'how',       hint: 'как = каким образом 🤔' },
+  { rus: 'во сколько?',   eng: 'what time', hint: 'во сколько = точное время, часы 🕐' },
+  { rus: 'сколько лет?',  eng: 'how old',   hint: 'сколько лет = возраст 🎂' },
+  { rus: 'кто?',          eng: 'who',       hint: 'кто = человек 🧑' }
+];
+const QW_POOL = ['where', 'what', 'when', 'how', 'what time', 'how old', 'who'];
+
+const QW_GAPS = [
+  { gap: '___ do you live?',        ans: '— In Moscow.',       key: 'Where',     hint: '«In Moscow» — это место 📍' },
+  { gap: '___ do you get up?',      ans: '— At 7 o\u2019clock.',   key: 'What time', hint: '«At 7 o\u2019clock» — точное время, часы 🕐' },
+  { gap: '___ do you play?',        ans: '— The guitar.',      key: 'What',      hint: '«The guitar» — вещь 🎸' },
+  { gap: '___ is your birthday?',   ans: '— In May.',          key: 'When',      hint: '«In May» — время, но не часы 📅' },
+  { gap: '___ are you?',            ans: '— I\u2019m twelve.',     key: 'How old',   hint: '«Twelve» — возраст 🎂' },
+  { gap: '___ do you do at the weekend?', ans: '— I play Roblox.', key: 'What',  hint: '«Play Roblox» — что делает? 🎮' },
+  { gap: '___ do you have breakfast?', ans: '— In the morning.', key: 'When',    hint: '«In the morning» — когда, но не точные часы 📅' },
+  { gap: '___ is your favourite game?', ans: '— Minecraft!',   key: 'What',      hint: '«Minecraft» — вещь/игра 🎮' },
+  { gap: '___ do you go to school?', ans: '— At 8:30.',        key: 'What time', hint: '«At 8:30» — точное время 🕐' },
+  { gap: '___ sports do you play?', ans: '— Tennis.',          key: 'What',      hint: '«Tennis» — вид спорта ⚽' }
+];
+
+const CAT_NAMES = { lex: 'смысловой', be: 'to be', can: 'can' };
+
+// ================= ЭТАПЫ УРОКА =================
+const STAGES = [
+  { emoji: '🔑', name: 'Слова-ключи',       goal: 'Сначала вспомним слова-ключи: где, что, когда, во сколько. Без них вопрос не начать!', setup: setupWords },
+  { emoji: '🔍', name: 'Охота за глаголом', goal: 'Найди глагол в предложении и назови его семью. Это главный навык всего урока!',          setup: setupHunt },
+  { emoji: '⚡', name: 'Speed Sort',        goal: 'Быстро раскидать вопросы по трём корзинам. Сначала знакомые, потом — новые!',            setup: setupSort },
+  { emoji: '🎁', name: 'Have got или do?',  goal: 'Одна хитрая пара: have got живёт как to be, а просто have — как обычный глагол.',        setup: setupGot },
+  { emoji: '🧱', name: 'Конструктор',       goal: 'Собери вопрос из блоков-кирпичиков. Смотри: есть и лишние!',                             setup: setupBuild },
+  { emoji: '📝', name: 'Рабочий лист',      goal: 'Как в настоящем рабочем листе: часть предложения подчеркнута — допиши вопрос после слова-ключа!', setup: setupWorksheet },
+  { emoji: '🎯', name: 'Миссия: узнай у меня!', goal: 'Теперь по-настоящему: тебе дают задание по-русски — ты задаёшь вопрос учителю ВСЛУХ!', setup: setupMission },
+  { emoji: '🕵️', name: 'Детектив — финал!', goal: 'Финальное расследование: дан только ответ свидетеля. Напиши вопрос целиком!',            setup: setupDetective }
+];
+
+// ================= СЛУЖЕБНОЕ =================
+const $ = (sel) => document.querySelector(sel);
+const G = {
+  stage: 0, items: [], idx: 0, score: 0, mistakes: [],
+  report: [], phase: null, mode: null, boundary: 0
+};
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function setProgress(text) {
+  $('#progress').textContent = text || '';
+  if (!text) { $('#stagefill').style.width = '0%'; return; }
+  const stagePart = (G.stage + 0.15) / STAGES.length;
+  const itemPart = G.items.length ? (G.idx / G.items.length) / STAGES.length : 0;
+  $('#stagefill').style.width = Math.min(100, Math.round((stagePart + itemPart) * 100)) + '%';
+}
+
+function progressText(emoji) {
+  return `${emoji} Этап ${G.stage + 1}/${STAGES.length} · ${G.idx + 1}/${G.items.length}`;
+}
+
+function feedback(html, ok) {
+  const f = $('.feedback');
+  if (!f) return;
+  f.className = 'feedback ' + (ok ? 'ok' : 'no');
+  f.innerHTML = html;
+}
+
+function highlightVerb(q, verb) {
+  if (!verb) return q;
+  const re = new RegExp('\\b(' + verb + ')\\b', 'i');
+  return q.replace(re, '<span class="verb-hint">$1</span>');
+}
+
+function norm(s) {
+  return s.toLowerCase()
+    .replace(/[?!.,'’`"«»]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// ================= ДВИЖОК УРОКА =================
+function startLesson() {
+  G.report = [];
+  G.stage = 0;
+  introStage(0);
+}
+
+function introStage(i) {
+  G.stage = i;
+  const st = STAGES[i];
+  show('#game');
+  setProgress(`${st.emoji} Этап ${i + 1}/${STAGES.length}`);
+  $('#game-card').innerHTML = `
+    <span class="stage-emoji">${st.emoji}</span>
+    <div class="stage-kicker">Этап ${i + 1} из ${STAGES.length}</div>
+    <div class="stage-name">${st.name}</div>
+    <div class="stage-goal">${st.goal}</div>
+    <button class="go-btn" id="btn-go">Вперёд! ▶</button>`;
+  $('#btn-go').onclick = () => st.setup();
+}
+
+function stageDone() {
+  const st = STAGES[G.stage];
+  G.report[G.stage] = { emoji: st.emoji, name: st.name, score: G.score, total: G.items.length, mistakes: G.mistakes.slice() };
+  show('#trans');
+  setProgress(`${st.emoji} Этап ${G.stage + 1}/${STAGES.length} — готов!`);
+  const last = G.stage === STAGES.length - 1;
+  let html = `
+    <span class="stage-emoji">${st.emoji}</span>
+    <div class="stage-kicker">Этап ${G.stage + 1} пройден!</div>
+    <div class="stage-name">${st.name}</div>
+    <div class="mini-result">⭐ ${G.score} из ${G.items.length}</div>`;
+  if (G.mistakes.length) {
+    html += `<div class="mini-mistakes"><b>Разобрать вместе:</b><ul style="margin:4px 0 0 18px">` +
+      G.mistakes.map(m => `<li>${m}</li>`).join('') + '</ul></div>';
+  } else {
+    html += `<div class="mini-result">Без единой ошибки! 🎉</div>`;
+  }
+  html += `<div class="mode-row">
+      <button class="go-btn" id="btn-next">${last ? 'К результатам урока 🏁' : 'Следующий этап ▶'}</button>
+      <button class="hint-btn" id="btn-again">🔄 Пройти этап ещё раз</button>
+    </div>`;
+  $('#trans-card').innerHTML = html;
+  $('#btn-next').onclick = () => last ? finalReport() : introStage(G.stage + 1);
+  $('#btn-again').onclick = () => { G.report[G.stage] = null; STAGES[G.stage].setup(); };
+}
+
+function finalReport() {
+  show('#end');
+  setProgress('🏁 Урок завершён!');
+  $('#stagefill').style.width = '100%';
+  const rows = G.report.filter(Boolean);
+  const totalScore = rows.reduce((s, r) => s + r.score, 0);
+  const totalMax = rows.reduce((s, r) => s + r.total, 0);
+  let html = `
+    <span class="stage-emoji">🏁</span>
+    <div class="stage-name">Урок пройден!</div>
+    <div class="score">${totalScore} / ${totalMax}</div>`;
+  html += rows.map(r => `
+    <div class="report-row">
+      <span class="r-emoji">${r.emoji}</span>
+      <span class="r-name">${r.name}</span>
+      <span class="r-score ${r.score < r.total * 0.7 ? 'low' : ''}">${r.score}/${r.total}</span>
+    </div>`).join('');
+  const allMistakes = rows.flatMap(r => r.mistakes.map(m => r.emoji + ' ' + m));
+  if (allMistakes.length) {
+    html += `<div class="mistakes"><b>📌 На повторение к следующему уроку:</b><ul style="margin:6px 0 0 20px">` +
+      allMistakes.map(m => `<li>${m}</li>`).join('') + '</ul></div>';
+  } else {
+    html += `<div class="mini-result">Идеальный урок — ни одной ошибки! 🐯🎉</div>`;
+  }
+  html += `<div class="end-btns"><button class="check-btn" id="btn-restart">🔄 Пройти урок заново</button></div>`;
+  $('#end-card').innerHTML = html;
+  $('#btn-restart').onclick = startLesson;
+}
+
+// карта урока для учителя
+function openMap() {
+  $('#map-list').innerHTML = STAGES.map((st, i) => {
+    const r = G.report[i];
+    const cls = r ? 'done' : (i === G.stage ? 'current' : '');
+    const status = r ? `✅ ${r.score}/${r.total}` : (i === G.stage ? '▶ сейчас' : 'впереди');
+    return `<button class="map-row ${cls}" data-i="${i}">
+      <span>${st.emoji}</span><span>${i + 1}. ${st.name}</span>
+      <span class="m-status">${status}</span></button>`;
+  }).join('');
+  document.querySelectorAll('.map-row').forEach(btn => {
+    btn.onclick = () => {
+      $('#map-overlay').classList.remove('open');
+      introStage(Number(btn.dataset.i));
+    };
+  });
+  $('#map-overlay').classList.add('open');
+}
+
+// ================= 1. СЛОВА-КЛЮЧИ =================
+function setupWords() {
+  const matches = shuffle(QW_MATCH).map(m => ({ type: 'match', ...m }));
+  const gaps = shuffle(QW_GAPS).map(m => ({ type: 'gap', ...m }));
+  G.items = matches.concat(gaps);
+  G.idx = 0; G.score = 0; G.mistakes = [];
+  renderWords();
+}
+
+function renderWords() {
+  if (G.idx >= G.items.length) return stageDone();
+  setProgress(progressText('🔑'));
+  const item = G.items[G.idx];
+  G.phase = 'words';
+
+  if (item.type === 'match') {
+    const opts = shuffle([item.eng].concat(shuffle(QW_POOL.filter(w => w !== item.eng)).slice(0, 3)));
+    $('#game-card').innerHTML = `
+      <div class="task-label">Как будет по-английски?</div>
+      <div class="rus-word">${item.rus}</div>
+      <div class="opt-row">${opts.map(o => `<button class="opt-btn" data-o="${o}">${o}</button>`).join('')}</div>
+      <div class="feedback"></div>`;
+  } else {
+    const opts = shuffle([item.key].concat(shuffle(['Where','What','When','How','What time','How old','Who'].filter(w => w !== item.key)).slice(0, 3)));
+    $('#game-card').innerHTML = `
+      <div class="task-label">Прочитай ответ — какое слово спрашивает?</div>
+      <div class="gap-q">${item.gap.replace('___', '<span class="gap">?</span>')}</div>
+      <div class="gap-a">${item.ans}</div>
+      <div class="opt-row">${opts.map(o => `<button class="opt-btn" data-o="${o}">${o}</button>`).join('')}</div>
+      <div class="feedback"></div>`;
+  }
+
+  document.querySelectorAll('.opt-btn').forEach(btn => {
+    btn.onclick = () => {
+      if (G.phase !== 'words') return;
+      const correct = item.type === 'match' ? item.eng : item.key;
+      if (btn.dataset.o === correct) {
+        G.score++;
+        feedback('Верно! ' + item.hint + ' 🎉', true);
+        G.phase = 'done';
+        setTimeout(() => { G.idx++; renderWords(); }, 1000);
+      } else {
+        const wrong = item.type === 'match' ? item.rus + ' → ' + item.eng : item.gap.replace('___', item.key) + ' ' + item.ans;
+        G.mistakes.push(wrong);
+        btn.classList.add('shake');
+        setTimeout(() => btn.classList.remove('shake'), 450);
+        feedback('Стоп! ' + item.hint, false);
+      }
+    };
+  });
+}
+
+// ================= 2. ОХОТА ЗА ГЛАГОЛОМ =================
+function setupHunt() {
+  G.items = shuffle(HUNT); G.idx = 0; G.score = 0; G.mistakes = [];
+  renderHunt();
+}
+
+function renderHunt() {
+  if (G.idx >= G.items.length) return stageDone();
+  setProgress(progressText('🔍'));
+  const item = G.items[G.idx];
+  G.phase = 'find';
+  $('#game-card').innerHTML = `
+    <div class="task-label">Шаг 1. Найди глагол — нажми на него 👆</div>
+    <div class="words">${item.words.map((w, i) => `<button class="word" data-i="${i}">${w}</button>`).join('')}</div>
+    <div class="cat-row" id="cat-row" style="display:none">
+      <button class="cat-btn lex" data-cat="lex">Смысловой</button>
+      <button class="cat-btn be" data-cat="be">to be</button>
+      <button class="cat-btn can" data-cat="can">can</button>
+    </div>
+    <div class="feedback"></div>`;
+
+  document.querySelectorAll('.word').forEach(btn => {
+    btn.onclick = () => {
+      if (G.phase !== 'find') return;
+      const i = Number(btn.dataset.i);
+      if (i === item.verb) {
+        btn.classList.add('hit');
+        G.phase = 'cat';
+        $('.task-label').textContent = 'Шаг 2. Какая это семья?';
+        $('#cat-row').style.display = 'flex';
+        feedback('Да! А теперь — какая семья? 🤔', true);
+      } else {
+        btn.classList.add('shake');
+        setTimeout(() => btn.classList.remove('shake'), 450);
+        feedback('Не-а. Ищем слово-действие! 👀', false);
+      }
+    };
+  });
+
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.onclick = () => {
+      if (G.phase !== 'cat') return;
+      if (btn.dataset.cat === item.cat) {
+        G.score++;
+        feedback('Верно! ' + CAT_NAMES[item.cat] + ' 🎉', true);
+        G.phase = 'done';
+        setTimeout(() => { G.idx++; renderHunt(); }, 900);
+      } else {
+        G.mistakes.push(item.words.join(' ') + ' → ' + CAT_NAMES[item.cat]);
+        btn.classList.add('shake');
+        setTimeout(() => btn.classList.remove('shake'), 450);
+        feedback('Почти! Подумай ещё 🐯', false);
+      }
+    };
+  });
+}
+
+// ================= 3. SPEED SORT =================
+function setupSort() {
+  G.items = shuffle(SORT_R1).concat(shuffle(SORT_R2));
+  G.boundary = SORT_R1.length;
+  G.idx = 0; G.score = 0; G.mistakes = [];
+  renderSort();
+}
+
+function renderSort() {
+  if (G.idx >= G.items.length) return stageDone();
+  const round2 = G.idx >= G.boundary;
+  setProgress(progressText('⚡'));
+  const item = G.items[G.idx];
+  G.phase = 'sort';
+  $('#game-card').innerHTML = `
+    <div class="task-label">${round2 ? '🚀 Раунд 2 — новые вопросы! Тот же алгоритм.' : 'В какую корзину? Сначала найди глагол!'}</div>
+    <div class="q-card" id="q-card">${item.q}</div>
+    <div class="baskets">
+      <button class="basket do" data-cat="do">DO / DOES<small>есть смысловой глагол</small></button>
+      <button class="basket be" data-cat="be">AM / IS / ARE<small>to be</small></button>
+      <button class="basket can" data-cat="can">CAN<small>умеет</small></button>
+    </div>
+    <div class="feedback"></div>`;
+
+  document.querySelectorAll('.basket').forEach(btn => {
+    btn.onclick = () => {
+      if (G.phase !== 'sort') return;
+      if (btn.dataset.cat === item.cat) {
+        G.score++;
+        feedback('Верно! 🎉', true);
+        G.phase = 'done';
+        setTimeout(() => { G.idx++; renderSort(); }, 700);
+      } else {
+        G.mistakes.push(item.q);
+        btn.classList.add('shake');
+        setTimeout(() => btn.classList.remove('shake'), 450);
+        $('#q-card').innerHTML = highlightVerb(item.q, item.verb);
+        feedback(item.verb
+          ? 'Стоп! Найди глагол 👀 — вот он: «' + item.verb + '». Он смысловой?'
+          : 'Стоп! Здесь to be — глагола-действия нет 🐯', false);
+      }
+    };
+  });
+}
+
+// ================= 4. HAVE GOT =================
+function setupGot() {
+  G.items = shuffle(GOT); G.idx = 0; G.score = 0; G.mistakes = [];
+  renderGot();
+}
+
+function renderGot() {
+  if (G.idx >= G.items.length) return stageDone();
+  setProgress(progressText('🎁'));
+  const item = G.items[G.idx];
+  G.phase = 'got';
+  $('#game-card').innerHTML = `
+    <div class="task-label">have got = как to be, перестановка. Без got — нужен do!</div>
+    <div class="q-card">${item.q}</div>
+    <div class="baskets">
+      <button class="basket got" data-cat="got">ЕСТЬ GOT<small>перестановка</small></button>
+      <button class="basket needdo" data-cat="do">БЕЗ GOT<small>нужен do</small></button>
+    </div>
+    <div class="feedback"></div>`;
+
+  document.querySelectorAll('.basket').forEach(btn => {
+    btn.onclick = () => {
+      if (G.phase !== 'got') return;
+      if (btn.dataset.cat === item.cat) {
+        G.score++;
+        feedback('Точно! 🎉', true);
+        G.phase = 'done';
+        setTimeout(() => { G.idx++; renderGot(); }, 700);
+      } else {
+        G.mistakes.push(item.q);
+        btn.classList.add('shake');
+        setTimeout(() => btn.classList.remove('shake'), 450);
+        feedback('Смотри: есть ли слово «got»? 👀', false);
+      }
+    };
+  });
+}
+
+// ================= 5. КОНСТРУКТОР =================
+function setupBuild() {
+  G.items = shuffle(BUILD); G.idx = 0; G.score = 0; G.mistakes = [];
+  renderBuild();
+}
+
+function drawBlocks(pool, placed) {
+  $('#slots').innerHTML = placed.length
+    ? placed.map((b, i) => `<button class="block ${/^(What|Where|Who|How)/.test(b) ? 'q-word' : ''}" data-p="${i}">${b}</button>`).join('')
+    : '<span style="color:#94a3b8;align-self:center">Собери вопрос здесь 👇</span>';
+  $('#pool').innerHTML = pool.map((b, i) => `<button class="block ${/^(What|Where|Who|How)/.test(b) ? 'q-word' : ''}" data-b="${i}">${b}</button>`).join('');
+  document.querySelectorAll('#pool .block').forEach(btn => {
+    btn.onclick = () => { placed.push(pool.splice(Number(btn.dataset.b), 1)[0]); drawBlocks(pool, placed); };
+  });
+  document.querySelectorAll('#slots .block').forEach(btn => {
+    btn.onclick = () => { pool.push(placed.splice(Number(btn.dataset.p), 1)[0]); drawBlocks(pool, placed); };
+  });
+}
+
+function renderBuild() {
+  if (G.idx >= G.items.length) return stageDone();
+  setProgress(progressText('🧱'));
+  const item = G.items[G.idx];
+  const pool = shuffle(item.answer.concat(item.extra));
+  const placed = [];
+
+  $('#game-card').innerHTML = `
+    <div class="task-label">Сделай из утверждения вопрос</div>
+    <div class="statement">${item.statement}</div>
+    <div class="slots" id="slots"></div>
+    <div class="pool" id="pool"></div>
+    <button class="check-btn" id="btn-check">Проверить ✅</button>
+    <div class="feedback"></div>`;
+  drawBlocks(pool, placed);
+
+  $('#btn-check').onclick = () => {
+    if (!placed.length) return;
+    const ok = placed.length === item.answer.length && placed.every((b, i) => b === item.answer[i]);
+    if (ok) {
+      G.score++;
+      feedback('Верно: ' + item.answer.join(' ') + '? 🎉', true);
+      setTimeout(() => { G.idx++; renderBuild(); }, 1100);
+    } else {
+      G.mistakes.push(item.statement + ' → ' + item.answer.join(' ') + '?');
+      $('#slots').classList.add('shake');
+      setTimeout(() => $('#slots').classList.remove('shake'), 450);
+      feedback('Не сходится. Какой глагол в утверждении? 🐯', false);
+    }
+  };
+}
+
+// ================= 6. РАБОЧИЙ ЛИСТ =================
+function setupWorksheet() {
+  G.items = shuffle(WORKSHEET); G.idx = 0; G.score = 0; G.mistakes = [];
+  renderWorksheet();
+}
+
+function renderWorksheet() {
+  if (G.idx >= G.items.length) return stageDone();
+  setProgress(progressText('📝'));
+  const item = G.items[G.idx];
+  let attempts = 0;
+  G.phase = 'worksheet';
+
+  $('#game-card').innerHTML = `
+    <div class="task-label">Задание №${G.idx + 1}. Подчёркнутая часть — про неё спрашиваем. Допиши вопрос! ✏️</div>
+    <div class="ws-statement">${item.s[0]}<span class="under">${item.s[1]}</span>${item.s[2]}</div>
+    <div class="ws-row">
+      <span class="ws-prefix">${item.word}</span>
+      <input class="q-input" id="q-input" type="text" autocomplete="off" autocapitalize="off"
+        placeholder="…допиши вопрос" enterkeyhint="done">
+      <span style="font-size:1.5rem;font-weight:bold">?</span>
+    </div>
+    <div class="det-btns">
+      <button class="check-btn" id="btn-check">Проверить ✅</button>
+      <button class="hint-btn" id="btn-hint">💡 Подсказка</button>
+      <button class="giveup-btn" id="btn-giveup">Показать ответ 👀</button>
+    </div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="feedback"></div>`;
+
+  const input = $('#q-input');
+  input.focus();
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#btn-check').click(); });
+
+  $('#btn-hint').onclick = () => {
+    const hb = $('#hint-box');
+    hb.textContent = item.hint;
+    hb.style.display = 'block';
+  };
+
+  function accepted() {
+    const v = norm(item.word + ' ' + input.value);
+    return [item.q].concat(item.alt).some(c => norm(c) === v);
+  }
+
+  function reveal(markCorrect) {
+    G.phase = 'done';
+    $('#q-input').disabled = true;
+    $('#btn-check').style.display = 'none';
+    $('#btn-hint').style.display = 'none';
+    $('#btn-giveup').style.display = 'none';
+    $('#hint-box').style.display = 'none';
+    const entry = item.q + '?';
+    $('.feedback').className = 'feedback';
+    $('.feedback').innerHTML = `
+      <div class="reveal-answer">${entry}</div>
+      <div class="say-note">Прочитай вслух 📣 Теперь решите вместе:</div>
+      <div class="teacher-row">
+        <button class="check-btn" id="t-ok">Засчитать ✅</button>
+        <button class="check-btn hard" id="t-no">В повторение ❌</button>
+      </div>`;
+    if (markCorrect) G.score++;
+    else G.mistakes.push(entry + '  (' + item.s.join('') + ')');
+    $('#t-ok').onclick = () => { if (!markCorrect) G.score++; G.idx++; renderWorksheet(); };
+    $('#t-no').onclick = () => {
+      if (markCorrect) G.score--;
+      if (markCorrect) G.mistakes.push(entry + '  (' + item.s.join('') + ')');
+      G.idx++; renderWorksheet();
+    };
+  }
+
+  $('#btn-check').onclick = () => {
+    if (G.phase !== 'worksheet') return;
+    if (!norm(input.value)) return;
+    if (accepted()) {
+      G.score++;
+      feedback('Верно! ' + item.q + '? 🎉', true);
+      G.phase = 'done';
+      setTimeout(() => { G.idx++; renderWorksheet(); }, 1200);
+    } else {
+      attempts++;
+      input.classList.add('shake');
+      setTimeout(() => input.classList.remove('shake'), 450);
+      if (attempts >= 2) {
+        reveal(false);
+      } else {
+        feedback('Не совсем. ' + item.hint, false);
+      }
+    }
+  };
+
+  $('#btn-giveup').onclick = () => { if (G.phase === 'worksheet') reveal(false); };
+}
+
+// ================= 7. МИССИЯ =================
+function setupMission() {
+  setProgress(progressText('🎯'));
+  $('#game-card').innerHTML = `
+    <div class="task-label">Как играем?</div>
+    <div class="mission"><span class="m-label">Твоя миссия, агент 🐯</span>
+      Тебе дают задание по-русски — ты строишь вопрос и задаёшь его учителю вслух!</div>
+    <div class="mode-row">
+      <button class="mode-btn" id="mode-blocks">🧱 С блоками<br><small style="font-weight:normal">легче: собери из кирпичиков</small></button>
+      <button class="mode-btn" id="mode-voice">🎤 Вслух без опоры<br><small style="font-weight:normal">сложнее: скажи сама, потом проверь</small></button>
+    </div>`;
+  $('#mode-blocks').onclick = () => beginMissions('blocks');
+  $('#mode-voice').onclick = () => beginMissions('voice');
+}
+
+function beginMissions(mode) {
+  G.items = shuffle(MISSIONS); G.idx = 0; G.score = 0; G.mistakes = [];
+  G.mode = mode;
+  renderMission();
+}
+
+function renderMission() {
+  if (G.idx >= G.items.length) return stageDone();
+  setProgress(progressText('🎯'));
+  const item = G.items[G.idx];
+
+  if (G.mode === 'voice') {
+    $('#game-card').innerHTML = `
+      <div class="task-label">Задай вопрос учителю ВСЛУХ 🎤 — потом проверь себя</div>
+      <div class="mission"><span class="m-label">Твоя миссия, агент 🐯</span>${item.task}</div>
+      <div id="reveal-zone"></div>
+      <button class="check-btn reveal" id="btn-reveal">Показать ответ 👀</button>
+      <div class="feedback"></div>`;
+    $('#btn-reveal').onclick = () => {
+      $('#reveal-zone').innerHTML = `<div class="reveal-answer">${item.text}</div>
+        <div class="say-note">Похоже на то, что ты сказала?</div>`;
+      $('#btn-reveal').style.display = 'none';
+      const f = $('.feedback');
+      f.className = 'feedback';
+      f.innerHTML = `<div class="mode-row">
+        <button class="check-btn" id="m-ok">Получилось! ✅</button>
+        <button class="check-btn hard" id="m-no">Было трудно ❌</button>
+      </div>`;
+      $('#m-ok').onclick = () => { G.score++; G.idx++; renderMission(); };
+      $('#m-no').onclick = () => { G.mistakes.push(item.task + ' → ' + item.text); G.idx++; renderMission(); };
+    };
+    return;
+  }
+
+  const pool = shuffle(item.answer.concat(item.extra));
+  const placed = [];
+  $('#game-card').innerHTML = `
+    <div class="task-label">Собери вопрос — и задай его учителю вслух! 🎤</div>
+    <div class="mission"><span class="m-label">Твоя миссия, агент 🐯</span>${item.task}</div>
+    <div class="slots" id="slots"></div>
+    <div class="pool" id="pool"></div>
+    <button class="check-btn" id="btn-check">Проверить ✅</button>
+    <div class="feedback"></div>`;
+  drawBlocks(pool, placed);
+
+  $('#btn-check').onclick = () => {
+    if (!placed.length) return;
+    const ok = placed.length === item.answer.length && placed.every((b, i) => b === item.answer[i]);
+    if (ok) {
+      G.score++;
+      feedback('Верно: <b>' + item.text + '</b><br>Теперь задай его вслух! 🎤', true);
+      setTimeout(() => { G.idx++; renderMission(); }, 2000);
+    } else {
+      G.mistakes.push(item.task + ' → ' + item.text);
+      $('#slots').classList.add('shake');
+      setTimeout(() => $('#slots').classList.remove('shake'), 450);
+      feedback('Не сходится. Подумай: какой здесь глагол? 🐯', false);
+    }
+  };
+}
+
+// ================= 8. ДЕТЕКТИВ =================
+function setupDetective() {
+  G.items = shuffle(DETECT); G.idx = 0; G.score = 0; G.mistakes = [];
+  renderDetective();
+}
+
+function renderDetective() {
+  if (G.idx >= G.items.length) return stageDone();
+  setProgress(progressText('🕵️'));
+  const item = G.items[G.idx];
+  let attempts = 0;
+  G.phase = 'detective';
+
+  $('#game-card').innerHTML = `
+    <div class="task-label">Детективное дело №${G.idx + 1}. Прочитай ответ и напиши вопрос ЦЕЛИКОМ 🕵️</div>
+    <div class="answer-card"><span class="a-label">Ответ свидетеля:</span>${item.a}</div>
+    <input class="q-input" id="q-input" type="text" autocomplete="off" autocapitalize="off"
+      placeholder="Напиши вопрос здесь…" enterkeyhint="done" style="max-width:560px;text-align:center">
+    <div class="det-btns">
+      <button class="check-btn" id="btn-check">Проверить ✅</button>
+      <button class="hint-btn" id="btn-hint">💡 Подсказка</button>
+      <button class="giveup-btn" id="btn-giveup">Показать ответ 👀</button>
+    </div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="feedback"></div>`;
+
+  const input = $('#q-input');
+  input.focus();
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#btn-check').click(); });
+
+  $('#btn-hint').onclick = () => {
+    const hb = $('#hint-box');
+    hb.textContent = item.hint;
+    hb.style.display = 'block';
+  };
+
+  function accepted() {
+    const v = norm(input.value);
+    if (!v) return false;
+    return [item.q].concat(item.alt).some(c => norm(c) === v);
+  }
+
+  function reveal(markCorrect) {
+    G.phase = 'done';
+    $('#q-input').disabled = true;
+    $('#btn-check').style.display = 'none';
+    $('#btn-hint').style.display = 'none';
+    $('#btn-giveup').style.display = 'none';
+    $('#hint-box').style.display = 'none';
+    const entry = item.q + '?';
+    $('.feedback').className = 'feedback';
+    $('.feedback').innerHTML = `
+      <div class="reveal-answer">${entry}</div>
+      <div class="say-note">Прочитай вслух 📣 Теперь решите вместе:</div>
+      <div class="teacher-row">
+        <button class="check-btn" id="t-ok">Засчитать ✅</button>
+        <button class="check-btn hard" id="t-no">В повторение ❌</button>
+      </div>`;
+    if (markCorrect) G.score++;
+    else G.mistakes.push(entry + '  (' + item.a + ')');
+    $('#t-ok').onclick = () => { if (!markCorrect) G.score++; G.idx++; renderDetective(); };
+    $('#t-no').onclick = () => {
+      if (markCorrect) { G.score--; G.mistakes.push(entry + '  (' + item.a + ')'); }
+      G.idx++; renderDetective();
+    };
+  }
+
+  $('#btn-check').onclick = () => {
+    if (G.phase !== 'detective') return;
+    if (accepted()) {
+      G.score++;
+      feedback('Верно! ' + item.q + '? 🎉', true);
+      G.phase = 'done';
+      setTimeout(() => { G.idx++; renderDetective(); }, 1200);
+    } else {
+      attempts++;
+      input.classList.add('shake');
+      setTimeout(() => input.classList.remove('shake'), 450);
+      if (attempts >= 2) {
+        reveal(false);
+      } else {
+        feedback('Не совсем. ' + item.hint, false);
+      }
+    }
+  };
+
+  $('#btn-giveup').onclick = () => { if (G.phase === 'detective') reveal(false); };
+}
+
+// ================= НАВИГАЦИЯ =================
+$('#btn-start').onclick = startLesson;
+$('#btn-map').onclick = openMap;
+$('#map-close').onclick = () => $('#map-overlay').classList.remove('open');
+$('#map-overlay').onclick = (e) => { if (e.target.id === 'map-overlay') e.target.classList.remove('open'); };
+$('#btn-algo').onclick = () => $('#algo-overlay').classList.add('open');
+$('#algo-close').onclick = () => $('#algo-overlay').classList.remove('open');
+$('#algo-overlay').onclick = (e) => { if (e.target.id === 'algo-overlay') e.target.classList.remove('open'); };
+</script>
+</body>
+</html>
