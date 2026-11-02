@@ -538,7 +538,7 @@ const TOPICS = [
   { label:'🎮 Favourite game',  key:'game',  model:'What is this person\u2019s favourite game?', clue:c=>'This person\u2019s favourite game is '+c.game+'.' },
   { label:'🏫 After school',    key:'after', model:'Does this person play after school?',      clue:c=>(c.after==='Yes'?'Yes, this person plays after school.':'No, this person doesn\u2019t play after school.') }
 ];
-function setupSecret(){ G.items=[1,2]; G.idx=0; G.score=0; G.mistakes=[]; startRound(); }
+function setupSecret(){ G.items=[1,2,3,4]; G.score=0; G.mistakes=[]; G.idx=0; startRound(); }
 function startRound(){
   G.secret=CHARS[Math.floor(Math.random()*CHARS.length)];
   G.excluded=new Set(); G.clues=[]; G.asked=new Set(); G.roundWrong=false; G.hintUsed=false;
@@ -546,7 +546,7 @@ function startRound(){
 }
 function renderSecret(){
   prog('🕵️'); G.phase='secret';
-  $('#game-card').innerHTML=`<div class="task-label">Я загадала одного из них! 🤫 Раунд ${G.idx+1}/2<br>
+  $('#game-card').innerHTML=`<div class="task-label">Я загадала одного из них! 🤫 Раунд ${G.idx+1}/4<br>
     Выбирай тему → задавай вопрос ВСЛУХ 🎤 → открывай ответ → вычёркивай лишних.</div>
     <div class="opt-row" id="topics">${TOPICS.map((t,i)=>`<button class="opt-btn" data-i="${i}" ${G.asked.has(i)?'disabled':''}>${t.label}</button>`).join('')}</div>
     <div id="ask-zone" style="margin:10px 0"></div>
@@ -592,8 +592,8 @@ function renderSecret(){
         else G.stat.sama++;
         if(G.roundWrong){ /* ошибочная попытка уже записана */ } else G.score++;
         fb(`🎉 Это ${c.name}! Дело раскрыто, детектив!`, true);
-        $('.feedback').innerHTML+=`<div class="help-row"><button class="go-btn next" id="next-round">${G.idx===0?'Новый раунд ▶':'Финиш ▶'}</button></div>`;
-        $('#next-round').onclick=()=>{ G.idx++; G.hintUsed=false; G.idx<2?startRound():stageDone(); };
+        $('.feedback').innerHTML+=`<div class="help-row"><button class="go-btn next" id="next-round">${G.idx<3?'Новый раунд ▶':'Финиш ▶'}</button></div>`;
+        $('#next-round').onclick=()=>{ G.idx++; G.hintUsed=false; G.idx<4?startRound():stageDone(); };
       } else {
         G.roundWrong=true; G.stat.shown++;
         G.mistakes.push('Персонаж: выбрала '+c.name+', загадан '+G.secret.name);
